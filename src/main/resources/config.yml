@@ -1,0 +1,2 @@
+# Time in seconds after the last player on disconnects before the server shutsdown
+restart-delay: 300

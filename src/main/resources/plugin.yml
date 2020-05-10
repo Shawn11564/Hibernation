@@ -1,0 +1,8 @@
+name: Hibernation
+version: ${project.version}
+main: dev.mrshawn.hibernation.Hibernation
+api-version: 1.13
+prefix: Hibernation
+authors: [MrShawn]
+description: Stop your server when no one is online
+website: https://mrshawn.dev/
