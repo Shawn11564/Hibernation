@@ -1,2 +1,13 @@
-# Time in seconds after the last player on disconnects before the server shutsdown
-restart-delay: 300
+shutdown:
+  # delay (in minutes) after the last user disconnects before shutting down
+  delay: 30
+  # whether to use the Bukkit#shutdown() method to shut down the server
+  use-shutdown-method: false
+  # commands run (in order) when the server is about to be shut down
+  pre-shutdown-commands:
+    - "broadcast &cServer shutting down!"
+    - "stop"
+messages:
+  shutdown-start: "&6The last player has left the server, shutting down in %delay% minutes"
+  shutdown-cancel: "&6Player has joined the server, shutdown cancelled"
+  shutdown-halfway: "&6The server is shutting down in %remaining% minutes"

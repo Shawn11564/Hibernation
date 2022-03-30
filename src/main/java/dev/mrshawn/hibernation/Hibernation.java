@@ -1,5 +1,9 @@
 package dev.mrshawn.hibernation;
 
+import dev.mrshawn.hibernation.config.Config;
+import dev.mrshawn.hibernation.config.FileSettings;
+import dev.mrshawn.hibernation.utils.Chat;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -10,14 +14,15 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 public final class Hibernation extends JavaPlugin implements Listener {
 
-	private long delay;
+	private static Hibernation instance;
+	private FileSettings settings;
 	private long taskID;
 
 	@Override
 	public void onEnable() {
-		getConfig().options().copyDefaults();
-		saveDefaultConfig();
-		delay = getConfig().getInt("restart-delay") * 20L;
+		instance = this;
+		settings = new FileSettings(this, "config", true)
+				.loadSettings(Config.class);
 		getServer().getPluginManager().registerEvents(this, this);
 	}
 
@@ -32,29 +37,43 @@ public final class Hibernation extends JavaPlugin implements Listener {
 	public void onConnect(PlayerJoinEvent event) {
 		if (taskID != 0) {
 			getServer().getScheduler().cancelTasks(this);
-			getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "Player has joined the server, shutdown cancelled!");
+			Chat.log(settings.getString(Config.MESSAGES_SHUTDOWN_CANCEL));
 			taskID = 0;
 		}
 	}
 
 	public void startCountdown() {
-
-		getServer().getConsoleSender().sendMessage(ChatColor.RED + "Last player has left the server, shutting down in: " + (delay / 20) + " seconds");
-
+		Chat.log(settings.getString(Config.MESSAGES_SHUTDOWN_START));
 		taskID = new BukkitRunnable() {
 			@Override
 			public void run() {
-				getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "Server will shutdown in: " + (delay / 20) / 2 + " seconds");
+				Chat.log(settings.getString(Config.MESSAGES_SHUTDOWN_HALFWAY));
 			}
-		}.runTaskLater(this, delay / 2).getTaskId();
+		}.runTaskLater(this, (settings.getInt(Config.SHUTDOWN_DELAY) * 20L * 60) / 2).getTaskId();
 
 		new BukkitRunnable() {
 			@Override
 			public void run() {
-				if (getServer().getOnlinePlayers().size() - 1 <= 0) {
-					getServer().shutdown();
+				if (getServer().getOnlinePlayers().size() > 0) {
+					Chat.log(settings.getString(Config.MESSAGES_SHUTDOWN_CANCEL));
+					getServer().getScheduler().cancelTasks(Hibernation.getInstance());
+					return;
+				}
+				for (String command : settings.getStringList(Config.SHUTDOWN_PRE_SHUTDOWN_COMMANDS)) {
+					Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				}
+				if (Hibernation.getInstance().isEnabled()) {
+					if (settings.getBoolean(Config.SHUTDOWN_USE_SHUTDOWN_METHOD)) {
+						Bukkit.shutdown();
+					}
 				}
 			}
-		}.runTaskLater(this, delay);
+		}.runTaskLater(this, settings.getInt(Config.SHUTDOWN_DELAY) * 20L * 60);
+
 	}
+
+	public static Hibernation getInstance() {
+		return instance;
+	}
+
 }
